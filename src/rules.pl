@@ -33,9 +33,11 @@ cousin(X, Y) :-
 % Two clauses, the mirror image of ancestor/2 in cases/kb.pl. The base
 % clause reads one parent fact. The recursive clause reads one parent fact
 % and then asks a smaller question.
-descendant(_, _) :-
-    throw(not_implemented(descendant/2)).
-
+descendant(D, A) :-
+    parent(A, D).
+descendant(D, A) :-
+    parent(P, D),
+    descendant(P, A).
 %%% R2 -- lists.
 
 % count_of(X, List, N): X occurs N times in List. N is 0 for the empty
