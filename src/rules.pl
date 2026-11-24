@@ -35,6 +35,7 @@ descendant(_, _) :-
 
 % count_of(X, List, N): X occurs N times in List. N is 0 for the empty
 % list, which is your base case.
+
 count_of(_, [], 0).                             % base case
 count_of(X, [X|T], N) :-                        % X is the head, and add the rest
     count_of(X, T, M),
@@ -45,8 +46,11 @@ count_of(X, [Y|T], N) :-
 
 % rev(List, Reversed): Reversed holds the elements of List in the other
 % order. Reverse the tail. Then use join/3 to put the head at the end.
-rev(_, _) :-
-    throw(not_implemented(rev/2)).
+
+rev([],[]).                                     % empty list, base case
+rev([H|T], R) :-
+    rev(T, RT),                                 % recursively call until empty list
+    join(RT, [H], R).                           % place the current head at the end of list
 
 % last_of(List, X): X is the last element of List. The empty list has no
 % last element, so last_of([], X) must fail.
