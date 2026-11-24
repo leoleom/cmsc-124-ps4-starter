@@ -35,13 +35,22 @@ descendant(_, _) :-
 
 % count_of(X, List, N): X occurs N times in List. N is 0 for the empty
 % list, which is your base case.
-count_of(_, _, _) :-
-    throw(not_implemented(count_of/3)).
+
+count_of(_, [], 0).                             % base case
+count_of(X, [X|T], N) :-                        % X is the head, and add the rest
+    count_of(X, T, M),
+    N is M + 1.                                 % include the head in the count
+count_of(X, [Y|T], N) :-
+    X \= Y,                                     % ensure X is not the head
+    count_of(X, T, N).
 
 % rev(List, Reversed): Reversed holds the elements of List in the other
 % order. Reverse the tail. Then use join/3 to put the head at the end.
-rev(_, _) :-
-    throw(not_implemented(rev/2)).
+
+rev([],[]).                                     % empty list, base case
+rev([H|T], R) :-
+    rev(T, RT),                                 % recursively call until empty list
+    join(RT, [H], R).                           % place the current head at the end of list
 
 % last_of(List, X): X is the last element of List. The empty list has no
 % last element, so last_of([], X) must fail.
@@ -58,5 +67,13 @@ last_of(_, _) :-
 % the cycle a -> b -> c -> a always offers one more edge. Carry the nodes
 % you visited. Refuse to step onto one again. \+ Goal is true when Goal
 % cannot be proved. That is how you say "not yet visited."
-route(_, _, _) :-
-    throw(not_implemented(route/3)).
+
+route(From, To, Path) :-
+    walk(From, To, [From], Path).               % call helper that stores start, destination, visited, and path
+
+
+walk(To, To, _, [To]).                          % base case (already there)
+walk(From, To, Visited, [From|Path]) :-         % recursive
+    edge(From, Next),
+    \+ elem(Next, Visited),                     % skip if already in Visited
+    walk(Next, To, [Next|Visited], Path).       % move position
