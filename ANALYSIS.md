@@ -1,11 +1,106 @@
 # The Search and the Stack
 
-Replace this paragraph after your checks pass. Paste the output of `./trace`
-for one case. Then answer three questions about it.
+In the P08 trace, every Call line pushes a frame onto Activity 15's runtime stack and a fail or an exit is a pop. The Call for ancestor(tom,X) pushes the query's frame, and the indented Call for parent(tom,X) pushes another frame on top of it. The next time we see a move in the frame is when we Exit for parent(tom,liz) which returns into ancestor, then the Exit for ancestor(tom, liz) returns to the query, which prints answer 1 with X=liz. The Call for parent(liz,X) is followed by a Fail for parent(liz, X), and the Fail for ancestor(liz, X) later pops the frame under it. The indentation shows the dynamic chain, since each indented call was made by the goal above it.
 
-- Which of its lines push a frame onto Activity 15's runtime stack? Which
-  lines pop one?
-- What does a `Redo` line resume that a returned frame cannot?
-- Why does swapping the two clauses of `reach/2` change whether the search
-  ever answers, while swapping the two clauses of `ancestor/2` only changes
-  the order of the answers?
+The Redo for ancestor(tom, liz) resumes a goal that already exited and it comes right after the Exit for the same goal and answer 1, so the goal basically outlived its own return. In Activity 15, a popped frame is thrown away with its locals, return address, and saved state, so nothing could retry it. However, Prolog keeps a separate choice point holding the alternatives it hasn't tried and the bindings to undo, so the Redo for parent(tom, liz) can reset X and Exit with parent(tom, bob). Later, the Redo for parent(tom, bob) ends in a Fail for parent(tom, X), so the facts ran out and the second clause starts with the Call for parent(tom, _).
+
+Lastly, the two pairs differ in what the recursive clause does first. In ancestor/2, it calls parent(tom, _) to bind a child before recursing, so the Call for ancestor(bob, X) and later the Call for ancestor(ann, X) each start one generation lower. The chain ends where the Call for parent(sue, X) fails, so the stack stays shallow and swapping the clauses only reorders the six answers. This trace has no reach lines, so this part comes from the clauses. In reach/2, the recursive clause calls reach(a, Z) first, which has the same first argument as the original goal, and no edge has been read to make the problem smaller. Each call would push another frame before any edge is read, with no Exit or Fail to pop one, so the stack only grows, which matches the stack overflow swipl printed for P11. In reach_r/2, edge(X, Z) is read first, so the start node moves along the graph. That is why swapping the reach clauses changes whether it answers.
+
+== trace P08 ==
+Call: ancestor(tom,X)
+  Call: parent(tom,X)
+  Exit: parent(tom,liz)
+Exit: ancestor(tom,liz)
+answer 1: X=liz
+Redo: ancestor(tom,liz)
+  Redo: parent(tom,liz)
+  Exit: parent(tom,bob)
+Exit: ancestor(tom,bob)
+answer 2: X=bob
+Redo: ancestor(tom,bob)
+  Redo: parent(tom,bob)
+  Fail: parent(tom,X)
+  Call: parent(tom,_)
+  Exit: parent(tom,liz)
+  Call: ancestor(liz,X)
+    Call: parent(liz,X)
+    Fail: parent(liz,X)
+    Call: parent(liz,_)
+    Fail: parent(liz,_)
+  Fail: ancestor(liz,X)
+  Redo: parent(tom,liz)
+  Exit: parent(tom,bob)
+  Call: ancestor(bob,X)
+    Call: parent(bob,X)
+    Exit: parent(bob,ann)
+  Exit: ancestor(bob,ann)
+Exit: ancestor(tom,ann)
+answer 3: X=ann
+Redo: ancestor(tom,ann)
+  Redo: ancestor(bob,ann)
+    Redo: parent(bob,ann)
+    Exit: parent(bob,pat)
+  Exit: ancestor(bob,pat)
+Exit: ancestor(tom,pat)
+answer 4: X=pat
+Redo: ancestor(tom,pat)
+  Redo: ancestor(bob,pat)
+    Redo: parent(bob,pat)
+    Fail: parent(bob,X)
+    Call: parent(bob,_)
+    Exit: parent(bob,ann)
+    Call: ancestor(ann,X)
+      Call: parent(ann,X)
+      Exit: parent(ann,sue)
+    Exit: ancestor(ann,sue)
+  Exit: ancestor(bob,sue)
+Exit: ancestor(tom,sue)
+answer 5: X=sue
+Redo: ancestor(tom,sue)
+  Redo: ancestor(bob,sue)
+    Redo: ancestor(ann,sue)
+      Redo: parent(ann,sue)
+      Fail: parent(ann,X)
+      Call: parent(ann,_)
+      Exit: parent(ann,sue)
+      Call: ancestor(sue,X)
+        Call: parent(sue,X)
+        Fail: parent(sue,X)
+        Call: parent(sue,_)
+        Fail: parent(sue,_)
+      Fail: ancestor(sue,X)
+      Redo: parent(ann,sue)
+      Fail: parent(ann,_)
+    Fail: ancestor(ann,X)
+    Redo: parent(bob,ann)
+    Exit: parent(bob,pat)
+    Call: ancestor(pat,X)
+      Call: parent(pat,X)
+      Exit: parent(pat,jim)
+    Exit: ancestor(pat,jim)
+  Exit: ancestor(bob,jim)
+Exit: ancestor(tom,jim)
+answer 6: X=jim
+Redo: ancestor(tom,jim)
+  Redo: ancestor(bob,jim)
+    Redo: ancestor(pat,jim)
+      Redo: parent(pat,jim)
+      Fail: parent(pat,X)
+      Call: parent(pat,_)
+      Exit: parent(pat,jim)
+      Call: ancestor(jim,X)
+        Call: parent(jim,X)
+        Fail: parent(jim,X)
+        Call: parent(jim,_)
+        Fail: parent(jim,_)
+      Fail: ancestor(jim,X)
+      Redo: parent(pat,jim)
+      Fail: parent(pat,_)
+    Fail: ancestor(pat,X)
+    Redo: parent(bob,pat)
+    Fail: parent(bob,_)
+  Fail: ancestor(bob,X)
+  Redo: parent(tom,bob)
+  Fail: parent(tom,_)
+Fail: ancestor(tom,X)
+== 6 answers ==
